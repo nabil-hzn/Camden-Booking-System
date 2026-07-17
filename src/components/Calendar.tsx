@@ -151,7 +151,7 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
           <LucideIcon name="ChevronLeft" size={16} />
         </button>
 
-        <h3 className="absolute inset-x-0 mx-auto text-center font-serif italic font-extrabold text-base sm:text-lg text-[#0f172b] tracking-wide pointer-events-none">
+        <h3 className="absolute inset-x-0 mx-auto text-center font-display font-extrabold text-base sm:text-lg text-[#0f172b] tracking-wide pointer-events-none">
           {monthNames[currentMonth]} {currentYear}
         </h3>
 

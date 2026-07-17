@@ -91,7 +91,7 @@ export default function TimeSlotGrid({
     );
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md shadow-slate-100/40 h-full flex flex-col" id="timeslot-scheduler">
+    <div className="bg-white border border-slate-200 rounded-2xl px-6 py-3 shadow-md shadow-slate-100/40 h-full flex flex-col" id="timeslot-scheduler">
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-100 shrink-0">
         <p className="text-slate-500 text-xs font-sans">
@@ -123,9 +123,10 @@ export default function TimeSlotGrid({
             if (slot.isBooked) {
               if (slot.isCurrentUser) {
                 // Mine: distinct gray marker (check icon + tint), no navy border needed
-                btnStyleClass = 'bg-slate-200 border-slate-300 text-slate-800 shadow-sm';
+                btnStyleClass = 'bg-slate-300 border-slate-400 text-slate-900 shadow-sm';
               } else {
-                btnStyleClass = 'bg-slate-100/60 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed';
+                // Booked by someone else: same muted treatment as a past slot, no name shown
+                btnStyleClass = 'bg-slate-100/30 border-transparent text-slate-300 cursor-not-allowed opacity-30';
               }
             } else if (isSelected) {
               // Currently being selected (not yet confirmed): same navy treatment as the calendar's selected day
@@ -158,35 +159,27 @@ export default function TimeSlotGrid({
                   </span>
 
                   {/* Micro Icon Indicators */}
-                  {(slot.isBooked || isSelected) ? (
-                    slot.isCurrentUser ? (
-                      <span className="text-white p-0.5 rounded bg-slate-600 inline-flex items-center justify-center">
-                        <LucideIcon name="Check" size={9} className="stroke-[3px]" />
-                      </span>
-                    ) : isSelected ? (
-                      <span className="text-[#0f172b] p-0.5 rounded bg-white inline-flex items-center justify-center">
-                        <LucideIcon name="Check" size={9} className="stroke-[3px]" />
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">
-                        <LucideIcon name="Lock" size={9} />
-                      </span>
-                    )
+                  {slot.isCurrentUser ? (
+                    <span className="text-white p-0.5 rounded bg-slate-700 inline-flex items-center justify-center">
+                      <LucideIcon name="Check" size={9} className="stroke-[3px]" />
+                    </span>
+                  ) : isSelected ? (
+                    <span className="text-[#0f172b] p-0.5 rounded bg-white inline-flex items-center justify-center">
+                      <LucideIcon name="Check" size={9} className="stroke-[3px]" />
+                    </span>
                   ) : isDailyLimitBlocked ? (
                     <span className="text-amber-500">
                       <LucideIcon name="Lock" size={9} />
                     </span>
-                  ) : isPastDisabled ? (
-                    <span className="text-slate-400 text-[8px] font-mono uppercase tracking-wider">Past</span>
                   ) : null}
                 </div>
 
                 {/* Status and Action row */}
                 <div className="mt-1 flex items-center justify-between gap-1">
-                  {(slot.isBooked || isSelected) ? (
+                  {(slot.isCurrentUser || isSelected) ? (
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[9px] font-sans truncate font-semibold leading-none ${isSelected ? 'text-slate-200' : slot.isCurrentUser ? 'text-slate-700' : 'text-slate-600'}`}>
-                        {slot.isCurrentUser ? 'Your session' : isSelected ? 'Selecting...' : `${slot.bookedBy}`}
+                      <p className={`text-[9px] font-sans truncate font-semibold leading-none ${isSelected ? 'text-slate-200' : 'text-slate-800'}`}>
+                        {slot.isCurrentUser ? 'Your session' : 'Selecting...'}
                       </p>
                       {slot.isCurrentUser && (
                         <button
@@ -208,7 +201,7 @@ export default function TimeSlotGrid({
                     </div>
                   ) : isDailyLimitBlocked ? (
                     <span className="text-[9px] text-amber-600 font-sans italic font-semibold leading-none">Daily limit reached</span>
-                  ) : isPastDisabled ? (
+                  ) : (slot.isBooked || isPastDisabled) ? (
                     <span className="text-[9px] text-slate-400 font-sans italic leading-none">Unavailable</span>
                   ) : (
                     <button
