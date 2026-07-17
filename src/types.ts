@@ -1,0 +1,44 @@
+export type RoomType = 'nap' | 'lounge' | 'meeting' | 'living_meeting';
+
+export interface Amenity {
+  name: string;
+  iconName: string; // matches lucide icon name
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  type: RoomType;
+  description: string;
+  capacity: number;
+  floor: string;
+  amenities: Amenity[];
+  gradientFrom: string;
+  gradientTo: string;
+  accentColor: string;
+  rating: number;
+  featuredImage: string;
+}
+
+export interface Booking {
+  id: string;
+  roomId: string;
+  date: string; // YYYY-MM-DD
+  slot: string; // HH:MM (24h)
+  durationMinutes: number;
+  userEmail: string;
+  userName: string;
+  purpose: string;
+  notes?: string;
+  createdAt: string;
+  isSimulated?: boolean;
+}
+
+export interface TimeSlot {
+  time: string; // HH:MM
+  label: string; // HH:MM AM/PM
+  isBooked: boolean;
+  bookedBy?: string;
+  bookingId?: string;
+  isCurrentUser?: boolean;
+}
