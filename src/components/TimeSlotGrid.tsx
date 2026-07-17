@@ -106,11 +106,11 @@ export default function TimeSlotGrid({
         
         {/* Status indicators - Only Mine as requested */}
         <div className="flex items-center space-x-3 text-xs text-slate-500 font-sans">
-          <div className="flex items-center space-x-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-2xs">
-            <span className="text-white p-0.5 rounded bg-emerald-600 flex items-center justify-center">
+          <div className="flex items-center space-x-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">
+            <span className="text-white p-0.5 rounded bg-slate-600 flex items-center justify-center">
               <LucideIcon name="Check" size={8} className="stroke-[3px]" />
             </span>
-            <span className="font-semibold text-emerald-700">Mine</span>
+            <span className="font-semibold text-slate-700">Mine</span>
           </div>
         </div>
       </div>
@@ -128,8 +128,8 @@ export default function TimeSlotGrid({
             let btnStyleClass = 'bg-slate-50 border-slate-200/80 hover:bg-slate-100/90 hover:border-[#0f172b]/30 text-slate-700 hover:scale-[1.01] shadow-xs';
             if (slot.isBooked) {
               if (slot.isCurrentUser) {
-                // Mine: distinct emerald marker (check icon + tint), no navy border needed
-                btnStyleClass = 'bg-emerald-50 border-emerald-200 text-emerald-800 shadow-sm';
+                // Mine: distinct gray marker (check icon + tint), no navy border needed
+                btnStyleClass = 'bg-slate-200 border-slate-300 text-slate-800 shadow-sm';
               } else {
                 btnStyleClass = 'bg-slate-100/60 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed';
               }
@@ -159,14 +159,14 @@ export default function TimeSlotGrid({
               >
                 {/* Slot Time Label */}
                 <div className="flex items-center justify-between">
-                  <span className={`font-mono text-xs font-bold tracking-tight flex items-center gap-1 ${isSelected ? 'text-white' : slot.isCurrentUser ? 'text-emerald-800' : 'text-slate-800'}`}>
+                  <span className={`font-mono text-xs font-bold tracking-tight flex items-center gap-1 ${isSelected ? 'text-white' : slot.isCurrentUser ? 'text-slate-900' : 'text-slate-800'}`}>
                     {slot.label}
                   </span>
 
                   {/* Micro Icon Indicators */}
                   {(slot.isBooked || isSelected) ? (
                     slot.isCurrentUser ? (
-                      <span className="text-white p-0.5 rounded bg-emerald-600 inline-flex items-center justify-center">
+                      <span className="text-white p-0.5 rounded bg-slate-600 inline-flex items-center justify-center">
                         <LucideIcon name="Check" size={9} className="stroke-[3px]" />
                       </span>
                     ) : isSelected ? (
@@ -191,7 +191,7 @@ export default function TimeSlotGrid({
                 <div className="mt-1 flex items-center justify-between gap-1">
                   {(slot.isBooked || isSelected) ? (
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[9px] font-sans truncate font-semibold leading-none ${isSelected ? 'text-slate-200' : slot.isCurrentUser ? 'text-emerald-700' : 'text-slate-600'}`}>
+                      <p className={`text-[9px] font-sans truncate font-semibold leading-none ${isSelected ? 'text-slate-200' : slot.isCurrentUser ? 'text-slate-700' : 'text-slate-600'}`}>
                         {slot.isCurrentUser ? 'Your session' : isSelected ? 'Selecting...' : `${slot.bookedBy}`}
                       </p>
                       {slot.isCurrentUser && (

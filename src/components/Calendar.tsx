@@ -83,7 +83,7 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
       const isValidDay = dayNum > 0 && dayNum <= daysInMonth;
 
       if (!isValidDay) {
-        days.push(<div key={`empty-${i}`} className="w-full aspect-square" />);
+        days.push(<div key={`empty-${i}`} className="w-full h-full" />);
         continue;
       }
 
@@ -112,26 +112,27 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
       }
 
       days.push(
-        <button
-          key={`day-${dayNum}`}
-          disabled={isPast}
-          onClick={() => handleDaySelect(dayNum)}
-          className={`
-            relative w-full aspect-square max-w-8 mx-auto rounded-full flex flex-col items-center justify-center text-xs font-sans transition-all duration-200 focus:outline-none cursor-pointer
-            ${isPast ? 'text-slate-300 cursor-not-allowed opacity-40' : 'text-slate-700 font-medium'}
-            ${isToday && !isSelected ? 'border border-[#0f172b]/50 text-[#0f172b] font-semibold bg-[#0f172b]/5' : ''}
-            ${isSelected ? 'bg-[#0f172b] text-white font-bold shadow-md shadow-[#0f172b]/20 scale-105' : 'hover:bg-slate-100'}
-          `}
-          title={isToday ? 'Today' : undefined}
-          id={`calendar-day-${dateString}`}
-        >
-          <span className="font-display text-[13px]">{dayNum}</span>
-          {hasBookings && !isPast && (
-            <span 
-              className={`absolute bottom-0.5 h-0.5 w-0.5 rounded-full ${isSelected ? 'bg-white' : dotColorClass}`} 
-            />
-          )}
-        </button>
+        <div key={`day-${dayNum}`} className="w-full h-full flex items-center justify-center">
+          <button
+            disabled={isPast}
+            onClick={() => handleDaySelect(dayNum)}
+            className={`
+              relative aspect-square w-full h-full max-w-8 max-h-8 min-w-5 min-h-5 rounded-full flex flex-col items-center justify-center text-[10px] sm:text-xs font-sans transition-all duration-200 focus:outline-none cursor-pointer
+              ${isPast ? 'text-slate-300 cursor-not-allowed opacity-40' : 'text-slate-700 font-medium'}
+              ${isToday && !isSelected ? 'border border-[#0f172b]/50 text-[#0f172b] font-semibold bg-[#0f172b]/5' : ''}
+              ${isSelected ? 'bg-[#0f172b] text-white font-bold shadow-md shadow-[#0f172b]/20 scale-105' : 'hover:bg-slate-100'}
+            `}
+            title={isToday ? 'Today' : undefined}
+            id={`calendar-day-${dateString}`}
+          >
+            <span className="font-display leading-none">{dayNum}</span>
+            {hasBookings && !isPast && (
+              <span
+                className={`absolute bottom-0.5 h-0.5 w-0.5 rounded-full ${isSelected ? 'bg-white' : dotColorClass}`}
+              />
+            )}
+          </button>
+        </div>
       );
     }
     return days;
@@ -174,7 +175,7 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
       </div>
 
       {/* Days Grid */}
-      <div className="grid grid-cols-7 gap-1 justify-items-center flex-1 items-center min-h-0">
+      <div className="grid grid-cols-7 auto-rows-fr gap-1 flex-1 min-h-0">
         {renderDays()}
       </div>
     </div>
