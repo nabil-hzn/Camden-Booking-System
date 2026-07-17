@@ -1,5 +1,5 @@
 {
-  "name": "Room Booking App",
+  "name": "CMScheduler",
   "description": "An elegant space booking application with an interactive calendar and time slot scheduler for napping rooms, lounges, and meeting rooms.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
