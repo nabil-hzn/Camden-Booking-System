@@ -12,6 +12,7 @@ export interface Room {
   description: string;
   capacity: number;
   floor: string;
+  minBookingHours: number;
   amenities: Amenity[];
   gradientFrom: string;
   gradientTo: string;
@@ -38,7 +39,7 @@ export interface TimeSlot {
   time: string; // HH:MM
   label: string; // HH:MM AM/PM
   isBooked: boolean;
-  bookedBy?: string;
   bookingId?: string;
   isCurrentUser?: boolean;
+  isPastDisabled: boolean;
 }

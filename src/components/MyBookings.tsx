@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Booking, Room } from '../types';
 import LucideIcon from './LucideIcon';
+import { addMinutesToTime } from '../utils/bookingTime';
 
 interface MyBookingsProps {
   bookings: Booking[];
   rooms: Room[];
   selectedRoomId: string;
   selectedDate: string;
-  selectedSlotTime: string | null;
-  setSelectedSlotTime: (slot: string | null) => void;
+  selectedSlotTimes: string[];
+  setSelectedSlotTimes: (slots: string[]) => void;
   userName: string;
   setUserName: (name: string) => void;
   onConfirmBooking: (name: string, purpose: string, notes: string) => void;
@@ -21,8 +22,8 @@ export default function MyBookings({
   rooms,
   selectedRoomId,
   selectedDate,
-  selectedSlotTime,
-  setSelectedSlotTime,
+  selectedSlotTimes,
+  setSelectedSlotTimes,
   userName,
   setUserName,
   onConfirmBooking,
@@ -47,10 +48,10 @@ export default function MyBookings({
 
   // Auto-switch tab & reset form fields when slot selection changes
   useEffect(() => {
-    if (selectedSlotTime) {
+    if (selectedSlotTimes.length > 0) {
       setActiveTab('form');
       setError('');
-      
+
       // Determine default purpose
       if (activeRoom.type === 'nap') {
         setPurpose('Power Nap');
@@ -61,7 +62,13 @@ export default function MyBookings({
       }
       setNotes('');
     }
-  }, [selectedSlotTime, selectedRoomId, activeRoom]);
+  }, [selectedSlotTimes, selectedRoomId, activeRoom]);
+
+  const meetsMinimum = selectedSlotTimes.length >= activeRoom.minBookingHours;
+  const rangeStart = selectedSlotTimes[0];
+  const rangeEnd = selectedSlotTimes.length > 0
+    ? addMinutesToTime(selectedSlotTimes[selectedSlotTimes.length - 1], 60)
+    : undefined;
 
   // Filter bookings belonging to current user and sort chronologically
   const myBookings = bookings
@@ -127,8 +134,13 @@ export default function MyBookings({
       return;
     }
 
-    if (!selectedSlotTime) {
+    if (selectedSlotTimes.length === 0) {
       setError('No time slot selected.');
+      return;
+    }
+
+    if (!meetsMinimum) {
+      setError(`${activeRoom.name} requires a minimum of ${activeRoom.minBookingHours} hour(s) per booking. Select ${activeRoom.minBookingHours - selectedSlotTimes.length} more hour(s).`);
       return;
     }
 
@@ -156,7 +168,7 @@ export default function MyBookings({
         >
           <LucideIcon name="CalendarPlus" size={14} className={activeTab === 'form' ? 'text-[#0f172b]' : 'text-slate-400'} />
           <span>Book a Slot</span>
-          {selectedSlotTime && (
+          {selectedSlotTimes.length > 0 && (
             <span className="h-1.5 w-1.5 rounded-full bg-indigo-600 animate-pulse" />
           )}
         </button>
@@ -188,12 +200,12 @@ export default function MyBookings({
           /* ========================================================
              SUBMISSION FORM TAB
              ======================================================== */
-          selectedSlotTime ? (
+          selectedSlotTimes.length > 0 ? (
             <form onSubmit={handleFormSubmit} className="flex-1 flex flex-col justify-between min-h-0">
-              
+
               {/* Form Inputs (Scrollable if viewport is tiny) */}
               <div className="space-y-4 overflow-y-auto pr-0.5 flex-1 min-h-0 pb-3 scrollbar-thin">
-                
+
                 {/* Header detail */}
                 <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
                   <span className="text-[9px] font-mono tracking-wider uppercase text-slate-400 font-bold block">
@@ -203,7 +215,7 @@ export default function MyBookings({
                     <LucideIcon name="Shield" size={12} className="text-[#0f172b]/70" />
                     <span>{activeRoom.name}</span>
                   </h4>
-                  
+
                   <div className="grid grid-cols-2 gap-3 mt-2.5 pt-2.5 border-t border-slate-200/50">
                     <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-sans">
                       <LucideIcon name="Calendar" className="text-[#0f172b]/70 shrink-0" size={13} />
@@ -211,8 +223,18 @@ export default function MyBookings({
                     </div>
                     <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-mono">
                       <LucideIcon name="Clock" className="text-[#0f172b]/70 shrink-0" size={13} />
-                      <span className="font-bold">{formatTimeLabel(selectedSlotTime)}</span>
+                      <span className="font-bold">
+                        {formatTimeLabel(rangeStart)} - {rangeEnd && formatTimeLabel(rangeEnd)}
+                      </span>
                     </div>
+                  </div>
+
+                  <div className={`flex items-center gap-1.5 mt-2 text-[10px] font-sans font-semibold ${meetsMinimum ? 'text-[#0f172b]/70' : 'text-amber-600'}`}>
+                    <LucideIcon name={meetsMinimum ? 'CheckCircle' : 'AlertCircle'} size={11} />
+                    <span>
+                      {selectedSlotTimes.length} hour{selectedSlotTimes.length > 1 ? 's' : ''} selected
+                      {!meetsMinimum && ` — minimum ${activeRoom.minBookingHours} hour(s) required`}
+                    </span>
                   </div>
                 </div>
 
@@ -298,15 +320,16 @@ export default function MyBookings({
               <div className="pt-3 border-t border-slate-100 flex items-center space-x-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setSelectedSlotTime(null)}
+                  onClick={() => setSelectedSlotTimes([])}
                   className="flex-1 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100/70 border border-slate-200 rounded-xl transition-all cursor-pointer focus:outline-none"
                 >
                   Cancel Selection
                 </button>
-                
+
                 <button
                   type="submit"
-                  className="flex-1 py-2 text-xs font-bold text-white bg-[#0f172b] hover:bg-[#0a1023] rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1 cursor-pointer focus:outline-none"
+                  disabled={!meetsMinimum}
+                  className="flex-1 py-2 text-xs font-bold text-white bg-[#0f172b] hover:bg-[#0a1023] disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1 cursor-pointer focus:outline-none"
                 >
                   <LucideIcon name="CheckCircle" size={13} />
                   <span>Book Slot Now</span>
@@ -391,7 +414,7 @@ export default function MyBookings({
                         <div className="flex items-center space-x-1">
                           <LucideIcon name="Clock" className="text-[#0f172b]/60 shrink-0" size={11} />
                           <span className="text-[10px] font-semibold text-slate-500 font-mono">
-                            {formatTimeLabel(booking.slot)}
+                            {formatTimeLabel(booking.slot)} - {formatTimeLabel(addMinutesToTime(booking.slot, booking.durationMinutes))}
                           </span>
                         </div>
                       </div>

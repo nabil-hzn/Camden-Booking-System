@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ROOMS } from './data/rooms';
 import { SEED_BOOKINGS } from './data/seedBookings';
 import { Booking } from './types';
+import { findBookingCoveringSlot } from './utils/bookingTime';
 
 // Component imports
 import Calendar from './components/Calendar';
@@ -52,8 +53,8 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(() => getTodayString());
   const [selectedRoomId, setSelectedRoomId] = useState('nap-1');
   
-  // Slot selection state for booking modal
-  const [selectedSlotTime, setSelectedSlotTime] = useState<string | null>(null);
+  // Slot selection state for booking modal (contiguous hours, ordered ascending)
+  const [selectedSlotTimes, setSelectedSlotTimes] = useState<string[]>([]);
   
   // UI Notification State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -84,9 +85,9 @@ export default function App() {
   // Actions
   // ----------------------------------------------------
   
-  // Handle new booking confirmation (used by the booking modal for the Lounge)
+  // Handle new booking confirmation
   const handleConfirmBooking = (bookingName: string, purpose: string, notes: string) => {
-    if (!selectedSlotTime) return;
+    if (selectedSlotTimes.length === 0) return;
 
     // Napping Room: enforce 1 hour (1 slot) per account per day
     if (activeRoom.type === 'nap') {
@@ -95,19 +96,26 @@ export default function App() {
       );
       if (alreadyBookedNapToday) {
         showToast('Napping Room is limited to 1 hour per account per day.', 'error');
-        setSelectedSlotTime(null);
+        setSelectedSlotTimes([]);
         return;
       }
     }
 
-    // Double check availability
-    const alreadyBooked = bookings.some(
-      b => b.roomId === selectedRoomId && b.date === selectedDate && b.slot === selectedSlotTime
-    );
+    // Every other room has a minimum number of consecutive hours per booking
+    if (selectedSlotTimes.length < activeRoom.minBookingHours) {
+      showToast(`${activeRoom.name} requires a minimum of ${activeRoom.minBookingHours} hour(s) per booking.`, 'error');
+      return;
+    }
 
-    if (alreadyBooked) {
-      showToast('This slot was locked by another user. Please select another slot.', 'error');
-      setSelectedSlotTime(null);
+    // Double check availability across the full selected range
+    const roomDateBookings = bookings.filter(
+      b => b.roomId === selectedRoomId && b.date === selectedDate
+    );
+    const conflict = selectedSlotTimes.some(time => findBookingCoveringSlot(roomDateBookings, time));
+
+    if (conflict) {
+      showToast('One of the selected hours was locked by another user. Please select again.', 'error');
+      setSelectedSlotTimes([]);
       return;
     }
 
@@ -115,8 +123,8 @@ export default function App() {
       id: `booking-${Date.now()}`,
       roomId: selectedRoomId,
       date: selectedDate,
-      slot: selectedSlotTime,
-      durationMinutes: 60,
+      slot: selectedSlotTimes[0],
+      durationMinutes: selectedSlotTimes.length * 60,
       userEmail: defaultEmail,
       userName: bookingName,
       purpose,
@@ -126,38 +134,8 @@ export default function App() {
 
     setBookings(prev => [...prev, newBooking]);
     setUserName(bookingName); // update default name if customized
-    setSelectedSlotTime(null);
+    setSelectedSlotTimes([]);
     showToast(`Successfully locked slot for ${activeRoom.name}!`, 'success');
-  };
-
-  // Handle instant booking for non-lounge rooms
-  const handleInstantBooking = (slotTime: string) => {
-    // Double check availability
-    const alreadyBooked = bookings.some(
-      b => b.roomId === selectedRoomId && b.date === selectedDate && b.slot === slotTime
-    );
-
-    if (alreadyBooked) {
-      showToast('This slot was locked by another user. Please select another slot.', 'error');
-      return;
-    }
-
-    const defaultPurpose = activeRoom.type === 'nap' ? 'Nap Decompression' : 'Meeting Room Workspace';
-
-    const newBooking: Booking = {
-      id: `booking-${Date.now()}`,
-      roomId: selectedRoomId,
-      date: selectedDate,
-      slot: slotTime,
-      durationMinutes: 60,
-      userEmail: defaultEmail,
-      userName: userName,
-      purpose: defaultPurpose,
-      createdAt: new Date().toISOString(),
-    };
-
-    setBookings(prev => [...prev, newBooking]);
-    showToast(`Successfully reserved ${activeRoom.name}!`, 'success');
   };
 
   // Handle cancellation of a booking
@@ -327,6 +305,7 @@ export default function App() {
                       isSelected={selectedRoomId === room.id}
                       onSelect={() => {
                         setSelectedRoomId(room.id);
+                        setSelectedSlotTimes([]);
                         showToast(`Switched view to: ${room.name}`, 'info');
                       }}
                       selectedDate={selectedDate}
@@ -351,7 +330,7 @@ export default function App() {
                   selectedDate={selectedDate}
                   onSelectDate={(date) => {
                     setSelectedDate(date);
-                    setSelectedSlotTime(null);
+                    setSelectedSlotTimes([]);
                     showToast(`Viewing schedule for ${date}`, 'info');
                   }}
                   bookings={bookings}
@@ -368,14 +347,13 @@ export default function App() {
                 <TimeSlotGrid
                   selectedRoomId={selectedRoomId}
                   roomType={activeRoom.type}
+                  minBookingHours={activeRoom.minBookingHours}
                   selectedDate={selectedDate}
                   bookings={bookings}
                   currentUserEmail={defaultEmail}
-                  onSelectSlot={(slotTime) => {
-                    setSelectedSlotTime(slotTime);
-                  }}
+                  onSelectionChange={setSelectedSlotTimes}
                   onCancelBooking={handleCancelBooking}
-                  selectedSlotTime={selectedSlotTime}
+                  selectedSlotTimes={selectedSlotTimes}
                 />
               </div>
             </div>
@@ -393,8 +371,8 @@ export default function App() {
                 rooms={ROOMS}
                 selectedRoomId={selectedRoomId}
                 selectedDate={selectedDate}
-                selectedSlotTime={selectedSlotTime}
-                setSelectedSlotTime={setSelectedSlotTime}
+                selectedSlotTimes={selectedSlotTimes}
+                setSelectedSlotTimes={setSelectedSlotTimes}
                 userName={userName}
                 setUserName={setUserName}
                 onConfirmBooking={handleConfirmBooking}
