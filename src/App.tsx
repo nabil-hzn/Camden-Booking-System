@@ -307,7 +307,7 @@ export default function App() {
                 </div>
 
                 {/* Rooms List - stretched to fill full vertical height */}
-                <div className="space-y-1.5 sm:space-y-2 lg:space-y-2.5 flex flex-col flex-1 overflow-hidden pb-1" id="rooms-grid-container">
+                <div className="space-y-1.5 sm:space-y-2 lg:space-y-2.5 flex flex-col flex-1 overflow-y-auto pb-1 scrollbar-thin" id="rooms-grid-container">
                   {ROOMS.map((room) => (
                     <RoomCard
                       key={room.id}
