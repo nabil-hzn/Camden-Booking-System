@@ -3,6 +3,7 @@ import LucideIcon from './LucideIcon';
 
 interface TimeSlotGridProps {
   selectedRoomId: string;
+  roomType: string;
   selectedDate: string;
   bookings: Booking[];
   currentUserEmail: string;
@@ -29,6 +30,7 @@ export const TIME_SLOTS_PRESET = [
 
 export default function TimeSlotGrid({
   selectedRoomId,
+  roomType,
   selectedDate,
   bookings,
   currentUserEmail,
@@ -81,6 +83,13 @@ export default function TimeSlotGrid({
 
   const slots = getTimeSlots();
 
+  // Napping Room is limited to 1 hour (1 slot) per account per day
+  const napDailyLimitReached =
+    roomType === 'nap' &&
+    bookings.some(
+      b => b.roomId === selectedRoomId && b.date === selectedDate && b.userEmail === currentUserEmail
+    );
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md shadow-slate-100/40 h-full flex flex-col" id="timeslot-scheduler">
       {/* Header section */}
@@ -97,11 +106,11 @@ export default function TimeSlotGrid({
         
         {/* Status indicators - Only Mine as requested */}
         <div className="flex items-center space-x-3 text-xs text-slate-500 font-sans">
-          <div className="flex items-center space-x-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 shadow-2xs">
-            <span className="text-white p-0.5 rounded bg-[#0f172b] flex items-center justify-center">
+          <div className="flex items-center space-x-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 shadow-2xs">
+            <span className="text-white p-0.5 rounded bg-emerald-600 flex items-center justify-center">
               <LucideIcon name="Check" size={8} className="stroke-[3px]" />
             </span>
-            <span className="font-semibold text-slate-700">Mine</span>
+            <span className="font-semibold text-emerald-700">Mine</span>
           </div>
         </div>
       </div>
@@ -110,23 +119,26 @@ export default function TimeSlotGrid({
       <div className="flex-1 overflow-y-auto pb-1 min-h-0 w-full pr-1 scrollbar-thin">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
           {slots.map(slot => {
-            const isPast = isSlotInPast(slot.time);
-            const isDisabled = isPast && !slot.isBooked;
+            const isPastDisabled = isSlotInPast(slot.time) && !slot.isBooked;
+            const isDailyLimitBlocked = !slot.isBooked && !isPastDisabled && napDailyLimitReached;
+            const isDisabled = isPastDisabled || isDailyLimitBlocked;
             const isSelected = selectedSlotTime === slot.time;
 
             // Booked/Selected styling classes
             let btnStyleClass = 'bg-slate-50 border-slate-200/80 hover:bg-slate-100/90 hover:border-[#0f172b]/30 text-slate-700 hover:scale-[1.01] shadow-xs';
             if (slot.isBooked) {
               if (slot.isCurrentUser) {
-                // Mine: check icon is enough to signal ownership, no navy border needed
-                btnStyleClass = 'bg-white border-slate-200 text-[#0f172b] shadow-sm';
+                // Mine: distinct emerald marker (check icon + tint), no navy border needed
+                btnStyleClass = 'bg-emerald-50 border-emerald-200 text-emerald-800 shadow-sm';
               } else {
                 btnStyleClass = 'bg-slate-100/60 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed';
               }
             } else if (isSelected) {
-              // Currently being selected (not yet confirmed): dark gray background
-              btnStyleClass = 'bg-slate-700 border-slate-700 text-white shadow-sm';
-            } else if (isDisabled) {
+              // Currently being selected (not yet confirmed): same navy treatment as the calendar's selected day
+              btnStyleClass = 'bg-[#0f172b] border-[#0f172b] text-white shadow-md shadow-[#0f172b]/20';
+            } else if (isDailyLimitBlocked) {
+              btnStyleClass = 'bg-amber-50/60 border-amber-100 text-amber-500 cursor-not-allowed opacity-70';
+            } else if (isPastDisabled) {
               btnStyleClass = 'bg-slate-100/30 border-transparent text-slate-300 cursor-not-allowed opacity-30';
             }
 
@@ -147,14 +159,18 @@ export default function TimeSlotGrid({
               >
                 {/* Slot Time Label */}
                 <div className="flex items-center justify-between">
-                  <span className={`font-mono text-xs font-bold tracking-tight flex items-center gap-1 ${isSelected ? 'text-white' : 'text-slate-800'}`}>
+                  <span className={`font-mono text-xs font-bold tracking-tight flex items-center gap-1 ${isSelected ? 'text-white' : slot.isCurrentUser ? 'text-emerald-800' : 'text-slate-800'}`}>
                     {slot.label}
                   </span>
 
                   {/* Micro Icon Indicators */}
                   {(slot.isBooked || isSelected) ? (
-                    (slot.isCurrentUser || isSelected) ? (
-                      <span className={`p-0.5 rounded inline-flex items-center justify-center ${isSelected ? 'text-slate-700 bg-white' : 'text-white bg-[#0f172b]'}`}>
+                    slot.isCurrentUser ? (
+                      <span className="text-white p-0.5 rounded bg-emerald-600 inline-flex items-center justify-center">
+                        <LucideIcon name="Check" size={9} className="stroke-[3px]" />
+                      </span>
+                    ) : isSelected ? (
+                      <span className="text-[#0f172b] p-0.5 rounded bg-white inline-flex items-center justify-center">
                         <LucideIcon name="Check" size={9} className="stroke-[3px]" />
                       </span>
                     ) : (
@@ -162,7 +178,11 @@ export default function TimeSlotGrid({
                         <LucideIcon name="Lock" size={9} />
                       </span>
                     )
-                  ) : isDisabled ? (
+                  ) : isDailyLimitBlocked ? (
+                    <span className="text-amber-500">
+                      <LucideIcon name="Lock" size={9} />
+                    </span>
+                  ) : isPastDisabled ? (
                     <span className="text-slate-400 text-[8px] font-mono uppercase tracking-wider">Past</span>
                   ) : null}
                 </div>
@@ -171,7 +191,7 @@ export default function TimeSlotGrid({
                 <div className="mt-1 flex items-center justify-between gap-1">
                   {(slot.isBooked || isSelected) ? (
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[9px] font-sans truncate font-semibold leading-none ${isSelected ? 'text-slate-200' : 'text-slate-600'}`}>
+                      <p className={`text-[9px] font-sans truncate font-semibold leading-none ${isSelected ? 'text-slate-200' : slot.isCurrentUser ? 'text-emerald-700' : 'text-slate-600'}`}>
                         {slot.isCurrentUser ? 'Your session' : isSelected ? 'Selecting...' : `${slot.bookedBy}`}
                       </p>
                       {slot.isCurrentUser && (
@@ -192,7 +212,9 @@ export default function TimeSlotGrid({
                         </span>
                       )}
                     </div>
-                  ) : isDisabled ? (
+                  ) : isDailyLimitBlocked ? (
+                    <span className="text-[9px] text-amber-600 font-sans italic font-semibold leading-none">Daily limit reached</span>
+                  ) : isPastDisabled ? (
                     <span className="text-[9px] text-slate-400 font-sans italic leading-none">Unavailable</span>
                   ) : (
                     <button

@@ -83,7 +83,7 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
       const isValidDay = dayNum > 0 && dayNum <= daysInMonth;
 
       if (!isValidDay) {
-        days.push(<div key={`empty-${i}`} className="h-8 w-8" />);
+        days.push(<div key={`empty-${i}`} className="w-full aspect-square" />);
         continue;
       }
 
@@ -117,7 +117,7 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
           disabled={isPast}
           onClick={() => handleDaySelect(dayNum)}
           className={`
-            relative h-8 w-8 rounded-full flex flex-col items-center justify-center text-xs font-sans transition-all duration-200 focus:outline-none cursor-pointer
+            relative w-full aspect-square max-w-8 mx-auto rounded-full flex flex-col items-center justify-center text-xs font-sans transition-all duration-200 focus:outline-none cursor-pointer
             ${isPast ? 'text-slate-300 cursor-not-allowed opacity-40' : 'text-slate-700 font-medium'}
             ${isToday && !isSelected ? 'border border-[#0f172b]/50 text-[#0f172b] font-semibold bg-[#0f172b]/5' : ''}
             ${isSelected ? 'bg-[#0f172b] text-white font-bold shadow-md shadow-[#0f172b]/20 scale-105' : 'hover:bg-slate-100'}
@@ -151,7 +151,7 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
         </button>
 
         <h3 className="absolute inset-x-0 mx-auto text-center font-serif italic font-extrabold text-base sm:text-lg text-[#0f172b] tracking-wide pointer-events-none">
-          {monthNames[currentMonth]} <span className="text-slate-400 text-xs font-mono not-italic font-normal">{currentYear}</span>
+          {monthNames[currentMonth]} {currentYear}
         </h3>
 
         <button

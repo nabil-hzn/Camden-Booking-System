@@ -88,6 +88,18 @@ export default function App() {
   const handleConfirmBooking = (bookingName: string, purpose: string, notes: string) => {
     if (!selectedSlotTime) return;
 
+    // Napping Room: enforce 1 hour (1 slot) per account per day
+    if (activeRoom.type === 'nap') {
+      const alreadyBookedNapToday = bookings.some(
+        b => b.roomId === selectedRoomId && b.date === selectedDate && b.userEmail === defaultEmail
+      );
+      if (alreadyBookedNapToday) {
+        showToast('Napping Room is limited to 1 hour per account per day.', 'error');
+        setSelectedSlotTime(null);
+        return;
+      }
+    }
+
     // Double check availability
     const alreadyBooked = bookings.some(
       b => b.roomId === selectedRoomId && b.date === selectedDate && b.slot === selectedSlotTime
@@ -354,6 +366,7 @@ export default function App() {
               <div className="flex-1 min-h-0">
                 <TimeSlotGrid
                   selectedRoomId={selectedRoomId}
+                  roomType={activeRoom.type}
                   selectedDate={selectedDate}
                   bookings={bookings}
                   currentUserEmail={defaultEmail}
