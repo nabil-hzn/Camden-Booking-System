@@ -3,6 +3,8 @@ import { Booking, BookingFormDetails, Room } from '../types';
 import LucideIcon from './LucideIcon';
 import { addMinutesToTime } from '../utils/bookingTime';
 
+const TERMS_DOCUMENT_URL = 'https://drive.google.com/file/d/1xlL8pmJ6lG25zGfhaMIIPoBuBV1DR44X/view';
+
 interface MyBookingsProps {
   bookings: Booking[];
   rooms: Room[];
@@ -34,7 +36,6 @@ export default function MyBookings({
   const [description, setDescription] = useState('');
   const [hasCatering, setHasCatering] = useState<boolean | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
   const [error, setError] = useState('');
 
   const activeRoom = rooms.find(r => r.id === selectedRoomId) || rooms[0];
@@ -355,38 +356,40 @@ export default function MyBookings({
                   </div>
                 )}
 
-                {/* Booking Terms & Conditions */}
-                {requiresTermsAgreement && (
-                  <div className="space-y-2.5">
-                    <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 space-y-1.5">
-                      <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wide block">Booking Terms</span>
-                      <ul className="space-y-1 text-[10px] text-slate-600 font-sans list-disc list-inside">
-                        {activeRoom.terms.map((term) => (
-                          <li key={term}>{term}</li>
-                        ))}
-                      </ul>
-                      <button
-                        type="button"
-                        onClick={() => setShowTermsModal(true)}
-                        className="text-[10px] font-semibold text-[#0f172b] underline hover:text-[#0a1023] cursor-pointer focus:outline-none"
-                      >
-                        Click to view the full Terms &amp; Conditions for the use of The Lounge at Camden Medical
-                      </button>
-                    </div>
-
-                    <label className="flex items-start gap-2 text-[10px] text-slate-600 font-sans cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={agreedToTerms}
-                        onChange={(e) => setAgreedToTerms(e.target.checked)}
-                        className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/20 cursor-pointer"
-                      />
-                      <span>I declare that the details given are correct and I agree to the Terms &amp; Conditions.</span>
-                    </label>
-                  </div>
-                )}
-
               </div>
+
+              {/* Booking Terms & Conditions - pinned above the confirm action, not scrolled away */}
+              {requiresTermsAgreement && (
+                <div className="space-y-2.5 pt-3 border-t border-slate-100 shrink-0">
+                  <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 space-y-1.5">
+                    <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wide block">Booking Terms</span>
+                    <ul className="space-y-1 text-[10px] text-slate-600 font-sans list-disc list-inside">
+                      {activeRoom.terms.map((term) => (
+                        <li key={term}>{term}</li>
+                      ))}
+                    </ul>
+                    <a
+                      href={TERMS_DOCUMENT_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-[10px] font-semibold text-[#0f172b] underline hover:text-[#0a1023] cursor-pointer inline-block"
+                    >
+                      Click to view the full Terms &amp; Conditions for the use of The Lounge at Camden Medical
+                    </a>
+                  </div>
+
+                  <label className="flex items-start gap-2 text-[10px] text-slate-600 font-sans cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/20 cursor-pointer"
+                    />
+                    <span>I declare that the details given are correct and I agree to the Terms &amp; Conditions.</span>
+                  </label>
+                </div>
+              )}
 
               {/* Form Action Buttons at Bottom */}
               <div className="pt-3 border-t border-slate-100 flex items-center space-x-2 shrink-0">
@@ -530,37 +533,6 @@ export default function MyBookings({
         )}
 
       </div>
-
-      {/* Full Terms & Conditions Modal */}
-      {showTermsModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setShowTermsModal(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-[#0f172b]">Terms &amp; Conditions</h3>
-              <button
-                type="button"
-                onClick={() => setShowTermsModal(false)}
-                className="text-slate-400 hover:text-slate-700 cursor-pointer focus:outline-none"
-                title="Close"
-              >
-                <LucideIcon name="X" size={16} />
-              </button>
-            </div>
-            <p className="text-[10px] text-slate-500 mb-2">For the use of The Lounge at Camden Medical:</p>
-            <ul className="space-y-1.5 text-[11px] text-slate-700 list-disc list-inside">
-              {activeRoom.terms.map((term) => (
-                <li key={term}>{term}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
