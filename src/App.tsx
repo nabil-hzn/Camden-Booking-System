@@ -351,6 +351,7 @@ export default function App() {
                   selectedDate={selectedDate}
                   onSelectDate={(date) => {
                     setSelectedDate(date);
+                    setSelectedSlotTime(null);
                     showToast(`Viewing schedule for ${date}`, 'info');
                   }}
                   bookings={bookings}

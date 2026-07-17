@@ -93,17 +93,11 @@ export default function TimeSlotGrid({
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-md shadow-slate-100/40 h-full flex flex-col" id="timeslot-scheduler">
       {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100 shrink-0">
-        <div>
-          <h3 className="font-serif italic font-semibold text-lg text-[#0f172b] flex items-center gap-2">
-            <LucideIcon name="Clock" className="text-[#0f172b]" size={18} />
-            <span>Time Slots</span>
-          </h3>
-          <p className="text-slate-500 text-xs font-sans mt-0.5">
-            Select an hourly interval to book your slot for <span className="font-mono text-[#0f172b] font-semibold">{selectedDate}</span>.
-          </p>
-        </div>
-        
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-100 shrink-0">
+        <p className="text-slate-500 text-xs font-sans">
+          Select an hourly interval to book your slot for <span className="font-mono text-[#0f172b] font-semibold">{selectedDate}</span>.
+        </p>
+
         {/* Status indicators - Only Mine as requested */}
         <div className="flex items-center space-x-3 text-xs text-slate-500 font-sans">
           <div className="flex items-center space-x-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">

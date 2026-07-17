@@ -117,7 +117,7 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
             disabled={isPast}
             onClick={() => handleDaySelect(dayNum)}
             className={`
-              relative aspect-square w-full h-full max-w-8 max-h-8 min-w-5 min-h-5 rounded-full flex flex-col items-center justify-center text-[10px] sm:text-xs font-sans transition-all duration-200 focus:outline-none cursor-pointer
+              relative aspect-square w-full h-full max-w-9 max-h-9 min-w-6 min-h-6 rounded-full flex flex-col items-center justify-center text-xs sm:text-sm font-sans transition-all duration-200 focus:outline-none cursor-pointer
               ${isPast ? 'text-slate-300 cursor-not-allowed opacity-40' : 'text-slate-700 font-medium'}
               ${isToday && !isSelected ? 'border border-[#0f172b]/50 text-[#0f172b] font-semibold bg-[#0f172b]/5' : ''}
               ${isSelected ? 'bg-[#0f172b] text-white font-bold shadow-md shadow-[#0f172b]/20 scale-105' : 'hover:bg-slate-100'}
