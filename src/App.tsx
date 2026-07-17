@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ROOMS } from './data/rooms';
 import { SEED_BOOKINGS } from './data/seedBookings';
-import { Booking } from './types';
+import { Booking, BookingFormDetails } from './types';
 import { findBookingCoveringSlot } from './utils/bookingTime';
 
 // Component imports
@@ -86,7 +86,7 @@ export default function App() {
   // ----------------------------------------------------
   
   // Handle new booking confirmation
-  const handleConfirmBooking = (bookingName: string, purpose: string, notes: string) => {
+  const handleConfirmBooking = (details: BookingFormDetails) => {
     if (selectedSlotTimes.length === 0) return;
 
     // Napping Room: enforce 1 hour (1 slot) per account per day
@@ -126,14 +126,14 @@ export default function App() {
       slot: selectedSlotTimes[0],
       durationMinutes: selectedSlotTimes.length * 60,
       userEmail: defaultEmail,
-      userName: bookingName,
-      purpose,
-      notes: notes.trim() || undefined,
+      clinicName: details.clinicName,
+      unitNumber: details.unitNumber,
+      contactNo: details.contactNo,
+      description: details.description,
       createdAt: new Date().toISOString(),
     };
 
     setBookings(prev => [...prev, newBooking]);
-    setUserName(bookingName); // update default name if customized
     setSelectedSlotTimes([]);
     showToast(`Successfully locked slot for ${activeRoom.name}!`, 'success');
   };
@@ -373,8 +373,6 @@ export default function App() {
                 selectedDate={selectedDate}
                 selectedSlotTimes={selectedSlotTimes}
                 setSelectedSlotTimes={setSelectedSlotTimes}
-                userName={userName}
-                setUserName={setUserName}
                 onConfirmBooking={handleConfirmBooking}
                 onCancelBooking={handleCancelBooking}
                 currentUserEmail={defaultEmail}

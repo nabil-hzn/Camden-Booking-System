@@ -28,11 +28,19 @@ export interface Booking {
   slot: string; // HH:MM (24h)
   durationMinutes: number;
   userEmail: string;
-  userName: string;
-  purpose: string;
-  notes?: string;
+  clinicName: string;
+  unitNumber?: string;   // Napping Room bookings
+  contactNo?: string;    // Non-Napping Room bookings
+  description?: string;  // Non-Napping Room bookings
   createdAt: string;
   isSimulated?: boolean;
+}
+
+export interface BookingFormDetails {
+  clinicName: string;
+  unitNumber?: string;
+  contactNo?: string;
+  description?: string;
 }
 
 export interface TimeSlot {

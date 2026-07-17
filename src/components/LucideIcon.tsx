@@ -40,6 +40,10 @@ import {
   LogOut,
   AlertCircle,
   Activity,
+  Phone,
+  Hash,
+  Building2,
+  FileText,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
@@ -83,6 +87,10 @@ const iconMap: Record<string, React.ComponentType<{ className?: string; size?: n
   LogOut,
   AlertCircle,
   Activity,
+  Phone,
+  Hash,
+  Building2,
+  FileText,
 };
 
 interface LucideIconProps {

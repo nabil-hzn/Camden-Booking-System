@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Booking, Room } from '../types';
+import { Booking, BookingFormDetails, Room } from '../types';
 import LucideIcon from './LucideIcon';
 import { addMinutesToTime } from '../utils/bookingTime';
 
@@ -10,9 +10,7 @@ interface MyBookingsProps {
   selectedDate: string;
   selectedSlotTimes: string[];
   setSelectedSlotTimes: (slots: string[]) => void;
-  userName: string;
-  setUserName: (name: string) => void;
-  onConfirmBooking: (name: string, purpose: string, notes: string) => void;
+  onConfirmBooking: (details: BookingFormDetails) => void;
   onCancelBooking: (bookingId: string) => void;
   currentUserEmail: string;
 }
@@ -24,45 +22,33 @@ export default function MyBookings({
   selectedDate,
   selectedSlotTimes,
   setSelectedSlotTimes,
-  userName,
-  setUserName,
   onConfirmBooking,
   onCancelBooking,
   currentUserEmail,
 }: MyBookingsProps) {
   // Tabs: 'form' (Submit Booking) or 'list' (My Bookings)
   const [activeTab, setActiveTab] = useState<'form' | 'list'>('form');
-  const [localUserName, setLocalUserName] = useState(userName);
-  const [purpose, setPurpose] = useState('');
-  const [notes, setNotes] = useState('');
+  const [clinicName, setClinicName] = useState('');
+  const [unitNumber, setUnitNumber] = useState('');
+  const [contactNo, setContactNo] = useState('');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
 
-  // Keep local user name synced with App state
-  useEffect(() => {
-    if (userName) {
-      setLocalUserName(userName);
-    }
-  }, [userName]);
-
   const activeRoom = rooms.find(r => r.id === selectedRoomId) || rooms[0];
+  const isNap = activeRoom.type === 'nap';
+  const hasSelection = selectedSlotTimes.length > 0;
 
-  // Auto-switch tab & reset form fields when slot selection changes
+  // Auto-switch tab & reset form fields whenever a fresh selection begins or the room changes
   useEffect(() => {
-    if (selectedSlotTimes.length > 0) {
+    if (hasSelection) {
       setActiveTab('form');
       setError('');
-
-      // Determine default purpose
-      if (activeRoom.type === 'nap') {
-        setPurpose('Power Nap');
-      } else if (activeRoom.type === 'lounge') {
-        setPurpose('Informal Sync');
-      } else {
-        setPurpose('Team Huddle');
-      }
-      setNotes('');
+      setClinicName('');
+      setUnitNumber('');
+      setContactNo('');
+      setDescription('');
     }
-  }, [selectedSlotTimes, selectedRoomId, activeRoom]);
+  }, [hasSelection, selectedRoomId]);
 
   const meetsMinimum = selectedSlotTimes.length >= activeRoom.minBookingHours;
   const rangeStart = selectedSlotTimes[0];
@@ -78,23 +64,6 @@ export default function MyBookings({
       if (dateCompare !== 0) return dateCompare;
       return a.slot.localeCompare(b.slot);
     });
-
-  // Get presets depending on room type
-  const getPurposePresets = (type: string) => {
-    switch (type) {
-      case 'nap':
-        return ['Power Nap', 'Quiet Meditation', 'Headache Relief', 'Decompression'];
-      case 'lounge':
-        return ['Informal Sync', 'Coffee Break', 'Individual Focus', 'Casual Networking'];
-      case 'meeting':
-      case 'living_meeting':
-        return ['Team Huddle', 'Client Presentation', 'Strategic Workshop', 'Ideation Session'];
-      default:
-        return ['Booking Slot'];
-    }
-  };
-
-  const presets = getPurposePresets(activeRoom.type);
 
   // Helper to format time label (e.g. "14:00" to "02:00 PM")
   const formatTimeLabel = (timeStr: string) => {
@@ -124,13 +93,23 @@ export default function MyBookings({
     e.preventDefault();
     setError('');
 
-    if (!localUserName.trim()) {
-      setError('Please enter your full name.');
+    if (!clinicName.trim()) {
+      setError('Please enter the clinic name.');
       return;
     }
 
-    if (!purpose.trim()) {
-      setError('Please select or write a booking purpose.');
+    if (isNap && !unitNumber.trim()) {
+      setError('Please enter the unit number.');
+      return;
+    }
+
+    if (!isNap && !contactNo.trim()) {
+      setError('Please enter a contact number.');
+      return;
+    }
+
+    if (!isNap && !description.trim()) {
+      setError('Please enter a description of the event.');
       return;
     }
 
@@ -145,8 +124,13 @@ export default function MyBookings({
     }
 
     // Call submit handler in parent
-    onConfirmBooking(localUserName.trim(), purpose.trim(), notes.trim());
-    
+    onConfirmBooking({
+      clinicName: clinicName.trim(),
+      unitNumber: isNap ? unitNumber.trim() : undefined,
+      contactNo: !isNap ? contactNo.trim() : undefined,
+      description: !isNap ? description.trim() : undefined,
+    });
+
     // Automatically switch to bookings list to view the newly created reservation
     setActiveTab('list');
   };
@@ -245,74 +229,84 @@ export default function MyBookings({
                   </div>
                 )}
 
-                {/* Name Input */}
+                {/* Clinic Name */}
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide block font-sans">
-                    Your Name <span className="text-[#0f172b]">*</span>
+                    Clinic Name <span className="text-[#0f172b]">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                      <LucideIcon name="Users" size={14} />
+                      <LucideIcon name="Building2" size={14} />
                     </span>
                     <input
                       type="text"
-                      value={localUserName}
-                      onChange={(e) => {
-                        setLocalUserName(e.target.value);
-                        setUserName(e.target.value);
-                      }}
-                      placeholder="Enter your full name"
+                      value={clinicName}
+                      onChange={(e) => setClinicName(e.target.value)}
+                      placeholder="Enter clinic name"
                       className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/10 transition-all font-sans"
                       required
                     />
                   </div>
                 </div>
 
-                {/* Purpose Selector */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide block font-sans">
-                    Category <span className="text-[#0f172b]">*</span>
-                  </label>
-                  <div className="flex flex-wrap gap-1.5 mb-1.5">
-                    {presets.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setPurpose(preset)}
-                        className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-all border cursor-pointer focus:outline-none
-                          ${purpose === preset 
-                            ? 'bg-[#0f172b] border-[#0f172b] text-white shadow-xs' 
-                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300'
-                          }
-                        `}
-                      >
-                        {preset}
-                      </button>
-                    ))}
+                {isNap ? (
+                  /* Unit # (Napping Room only) */
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide block font-sans">
+                      Unit # <span className="text-[#0f172b]">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                        <LucideIcon name="Hash" size={14} />
+                      </span>
+                      <input
+                        type="text"
+                        value={unitNumber}
+                        onChange={(e) => setUnitNumber(e.target.value)}
+                        placeholder="E.g. #04-12"
+                        className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/10 transition-all font-sans"
+                        required
+                      />
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    value={purpose}
-                    onChange={(e) => setPurpose(e.target.value)}
-                    placeholder="Or enter custom purpose..."
-                    className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/10 transition-all font-sans"
-                    required
-                  />
-                </div>
+                ) : (
+                  <>
+                    {/* Contact No */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide block font-sans">
+                        Contact No <span className="text-[#0f172b]">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                          <LucideIcon name="Phone" size={14} />
+                        </span>
+                        <input
+                          type="tel"
+                          value={contactNo}
+                          onChange={(e) => setContactNo(e.target.value)}
+                          placeholder="E.g. 9123 4567"
+                          className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/10 transition-all font-sans"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                {/* Special Notes (Textarea) */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide block font-sans">
-                    Special Requests <span className="text-slate-400 font-normal normal-case">(Optional)</span>
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="E.g. room temperature, extra monitor, beverages..."
-                    rows={2}
-                    className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/10 transition-all font-sans resize-none"
-                  />
-                </div>
+                    {/* Description of Event */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide block font-sans">
+                        Description of Event <span className="text-[#0f172b]">*</span>
+                      </label>
+                      <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="E.g. Client presentation for external stakeholders..."
+                        rows={2}
+                        className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/10 transition-all font-sans resize-none"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
 
               </div>
 
@@ -419,16 +413,27 @@ export default function MyBookings({
                         </div>
                       </div>
 
-                      {/* Purpose & notes */}
-                      <div className="mt-2 text-[10px]">
-                        <div className="flex items-center text-slate-600">
-                          <span className="bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-[9px] font-sans font-bold text-[#0f172b]">
-                            {booking.purpose}
-                          </span>
+                      {/* Clinic / contact details */}
+                      <div className="mt-2 text-[10px] space-y-1">
+                        <div className="flex items-center gap-1 text-slate-600">
+                          <LucideIcon name="Building2" size={11} className="text-[#0f172b]/60 shrink-0" />
+                          <span className="font-semibold truncate">{booking.clinicName}</span>
                         </div>
-                        {booking.notes && (
-                          <p className="text-[9px] text-slate-400 mt-1.5 font-sans italic bg-slate-100/30 p-1.5 rounded border border-slate-200/40">
-                            "{booking.notes}"
+                        {booking.unitNumber && (
+                          <div className="flex items-center gap-1 text-slate-500">
+                            <LucideIcon name="Hash" size={11} className="text-[#0f172b]/60 shrink-0" />
+                            <span>Unit {booking.unitNumber}</span>
+                          </div>
+                        )}
+                        {booking.contactNo && (
+                          <div className="flex items-center gap-1 text-slate-500">
+                            <LucideIcon name="Phone" size={11} className="text-[#0f172b]/60 shrink-0" />
+                            <span>{booking.contactNo}</span>
+                          </div>
+                        )}
+                        {booking.description && (
+                          <p className="text-[9px] text-slate-400 mt-1 font-sans italic bg-slate-100/30 p-1.5 rounded border border-slate-200/40">
+                            "{booking.description}"
                           </p>
                         )}
                       </div>
