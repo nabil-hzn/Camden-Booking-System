@@ -358,7 +358,7 @@ export default function MyBookings({
               {/* Booking Terms & Conditions - pinned above the confirm action, not scrolled away */}
               {requiresTermsAgreement && (
                 <div className="space-y-2.5 pt-3 border-t border-slate-100 shrink-0">
-                  <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 space-y-1.5">
+                  <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-1.5 space-y-1">
                     <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wide block">Booking Terms</span>
                     <ul className="space-y-1 text-[10px] text-slate-600 font-sans list-disc list-inside">
                       {activeRoom.terms.map((term) => (
@@ -372,7 +372,7 @@ export default function MyBookings({
                       onClick={(e) => e.stopPropagation()}
                       className="text-[10px] font-semibold text-[#0f172b] underline hover:text-[#0a1023] cursor-pointer inline-block"
                     >
-                      Click to view the full Terms &amp; Conditions for the use of The Lounge at Camden Medical
+                      Click to view the full terms & conditions
                     </a>
                   </div>
 
