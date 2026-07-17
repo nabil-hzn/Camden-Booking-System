@@ -192,12 +192,9 @@ export default function App() {
               <LucideIcon name="Calendar" size={18} className="text-white stroke-[2.5px]" />
             </div>
             <div>
-              <h1 className="font-serif italic text-xl tracking-wide leading-none">
-                <span className="font-extrabold text-black">CM</span><span className="font-medium text-slate-400">Scheduler</span>
+              <h1 className="font-serif italic text-2xl tracking-wide leading-none">
+                <span className="font-extrabold text-black">CM</span><span className="font-bold text-slate-400">Scheduler</span>
               </h1>
-              <span className="text-[9px] text-slate-500 font-mono tracking-widest uppercase block mt-0.5">
-                Workspace Sanctuary
-              </span>
             </div>
           </div>
 
