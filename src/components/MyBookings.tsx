@@ -200,7 +200,7 @@ export default function MyBookings({
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 min-h-0 flex flex-col p-5">
+      <div className="flex-1 min-h-0 flex flex-col p-3">
         
         {activeTab === 'form' ? (
           /* ========================================================
@@ -214,10 +214,7 @@ export default function MyBookings({
 
                 {/* Header detail */}
                 <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl">
-                  <span className="text-[9px] font-mono tracking-wider uppercase text-slate-400 font-bold block">
-                    Selected Workspace
-                  </span>
-                  <h4 className="text-sm font-bold text-[#0f172b] leading-tight mt-0.5 flex items-center gap-1">
+                  <h4 className="text-sm font-bold text-[#0f172b] leading-tight flex items-center gap-1">
                     <LucideIcon name="Shield" size={12} className="text-[#0f172b]/70" />
                     <span>{activeRoom.name}</span>
                   </h4>
