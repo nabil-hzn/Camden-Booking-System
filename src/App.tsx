@@ -130,6 +130,7 @@ export default function App() {
       unitNumber: details.unitNumber,
       contactNo: details.contactNo,
       description: details.description,
+      hasCatering: details.hasCatering,
       createdAt: new Date().toISOString(),
     };
 

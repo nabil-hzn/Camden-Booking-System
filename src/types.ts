@@ -13,6 +13,7 @@ export interface Room {
   capacity: number;
   floor: string;
   minBookingHours: number;
+  terms: string[];
   amenities: Amenity[];
   gradientFrom: string;
   gradientTo: string;
@@ -32,6 +33,7 @@ export interface Booking {
   unitNumber?: string;   // Napping Room bookings
   contactNo?: string;    // Non-Napping Room bookings
   description?: string;  // Non-Napping Room bookings
+  hasCatering?: boolean; // Entire Lounge bookings only
   createdAt: string;
   isSimulated?: boolean;
 }
@@ -41,6 +43,7 @@ export interface BookingFormDetails {
   unitNumber?: string;
   contactNo?: string;
   description?: string;
+  hasCatering?: boolean;
 }
 
 export interface TimeSlot {

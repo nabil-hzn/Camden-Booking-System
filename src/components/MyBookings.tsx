@@ -32,10 +32,15 @@ export default function MyBookings({
   const [unitNumber, setUnitNumber] = useState('');
   const [contactNo, setContactNo] = useState('');
   const [description, setDescription] = useState('');
+  const [hasCatering, setHasCatering] = useState<boolean | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const [error, setError] = useState('');
 
   const activeRoom = rooms.find(r => r.id === selectedRoomId) || rooms[0];
   const isNap = activeRoom.type === 'nap';
+  const isLounge = activeRoom.type === 'lounge';
+  const requiresTermsAgreement = activeRoom.terms.length > 0;
   const hasSelection = selectedSlotTimes.length > 0;
 
   // Auto-switch tab & reset form fields whenever a fresh selection begins or the room changes
@@ -47,10 +52,15 @@ export default function MyBookings({
       setUnitNumber('');
       setContactNo('');
       setDescription('');
+      setHasCatering(null);
+      setAgreedToTerms(false);
     }
   }, [hasSelection, selectedRoomId]);
 
   const meetsMinimum = selectedSlotTimes.length >= activeRoom.minBookingHours;
+  const canSubmit = meetsMinimum
+    && (!isLounge || hasCatering !== null)
+    && (!requiresTermsAgreement || agreedToTerms);
   const rangeStart = selectedSlotTimes[0];
   const rangeEnd = selectedSlotTimes.length > 0
     ? addMinutesToTime(selectedSlotTimes[selectedSlotTimes.length - 1], 60)
@@ -113,6 +123,16 @@ export default function MyBookings({
       return;
     }
 
+    if (isLounge && hasCatering === null) {
+      setError('Please indicate whether catering service is required.');
+      return;
+    }
+
+    if (requiresTermsAgreement && !agreedToTerms) {
+      setError('Please agree to the Terms & Conditions to proceed.');
+      return;
+    }
+
     if (selectedSlotTimes.length === 0) {
       setError('No time slot selected.');
       return;
@@ -128,6 +148,7 @@ export default function MyBookings({
       clinicName: clinicName.trim(),
       unitNumber: isNap ? unitNumber.trim() : undefined,
       contactNo: !isNap ? contactNo.trim() : undefined,
+      hasCatering: isLounge ? hasCatering ?? undefined : undefined,
       description: !isNap ? description.trim() : undefined,
     });
 
@@ -308,6 +329,63 @@ export default function MyBookings({
                   </>
                 )}
 
+                {/* With Catering Service (Entire Lounge only) */}
+                {isLounge && (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide block font-sans">
+                      With Catering Service <span className="text-slate-400 font-normal normal-case">(Not provided by Camden Medical)</span> <span className="text-[#0f172b]">*</span>
+                    </label>
+                    <div className="flex gap-1.5">
+                      {([true, false] as const).map((option) => (
+                        <button
+                          key={String(option)}
+                          type="button"
+                          onClick={() => setHasCatering(option)}
+                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all border cursor-pointer focus:outline-none
+                            ${hasCatering === option
+                              ? 'bg-[#0f172b] border-[#0f172b] text-white shadow-xs'
+                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300'
+                            }
+                          `}
+                        >
+                          {option ? 'Yes' : 'No'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Booking Terms & Conditions */}
+                {requiresTermsAgreement && (
+                  <div className="space-y-2.5">
+                    <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 space-y-1.5">
+                      <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wide block">Booking Terms</span>
+                      <ul className="space-y-1 text-[10px] text-slate-600 font-sans list-disc list-inside">
+                        {activeRoom.terms.map((term) => (
+                          <li key={term}>{term}</li>
+                        ))}
+                      </ul>
+                      <button
+                        type="button"
+                        onClick={() => setShowTermsModal(true)}
+                        className="text-[10px] font-semibold text-[#0f172b] underline hover:text-[#0a1023] cursor-pointer focus:outline-none"
+                      >
+                        Click to view the full Terms &amp; Conditions for the use of The Lounge at Camden Medical
+                      </button>
+                    </div>
+
+                    <label className="flex items-start gap-2 text-[10px] text-slate-600 font-sans cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-[#0f172b] focus:ring-1 focus:ring-[#0f172b]/20 cursor-pointer"
+                      />
+                      <span>I declare that the details given are correct and I agree to the Terms &amp; Conditions.</span>
+                    </label>
+                  </div>
+                )}
+
               </div>
 
               {/* Form Action Buttons at Bottom */}
@@ -322,7 +400,7 @@ export default function MyBookings({
 
                 <button
                   type="submit"
-                  disabled={!meetsMinimum}
+                  disabled={!canSubmit}
                   className="flex-1 py-2 text-xs font-bold text-white bg-[#0f172b] hover:bg-[#0a1023] disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl shadow-xs transition-all flex items-center justify-center space-x-1 cursor-pointer focus:outline-none"
                 >
                   <LucideIcon name="CheckCircle" size={13} />
@@ -431,6 +509,12 @@ export default function MyBookings({
                             <span>{booking.contactNo}</span>
                           </div>
                         )}
+                        {room.type === 'lounge' && typeof booking.hasCatering === 'boolean' && (
+                          <div className="flex items-center gap-1 text-slate-500">
+                            <LucideIcon name="Coffee" size={11} className="text-[#0f172b]/60 shrink-0" />
+                            <span>Catering: {booking.hasCatering ? 'Yes' : 'No'}</span>
+                          </div>
+                        )}
                         {booking.description && (
                           <p className="text-[9px] text-slate-400 mt-1 font-sans italic bg-slate-100/30 p-1.5 rounded border border-slate-200/40">
                             "{booking.description}"
@@ -446,6 +530,37 @@ export default function MyBookings({
         )}
 
       </div>
+
+      {/* Full Terms & Conditions Modal */}
+      {showTermsModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowTermsModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-[#0f172b]">Terms &amp; Conditions</h3>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer focus:outline-none"
+                title="Close"
+              >
+                <LucideIcon name="X" size={16} />
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-500 mb-2">For the use of The Lounge at Camden Medical:</p>
+            <ul className="space-y-1.5 text-[11px] text-slate-700 list-disc list-inside">
+              {activeRoom.terms.map((term) => (
+                <li key={term}>{term}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
