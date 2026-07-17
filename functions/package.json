@@ -1,0 +1,13 @@
+{
+  "name": "cmscheduler-api",
+  "version": "1.0.0",
+  "description": "CMScheduler bookings API - Cloud Function backend",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^7.11.0",
+    "google-auth-library": "^9.15.0"
+  }
+}
