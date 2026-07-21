@@ -64,6 +64,10 @@ export default function TimeSlotGrid({
     b => b.roomId === selectedRoomId && b.date === selectedDate
   );
 
+  // No facility is bookable on Sundays
+  const [selectedYear, selectedMonth, selectedDay] = selectedDate.split('-').map(Number);
+  const isSunday = new Date(selectedYear, selectedMonth - 1, selectedDay).getDay() === 0;
+
   // Build slot metadata; a multi-hour booking covers every preset hour it spans
   const slots: TimeSlot[] = TIME_SLOTS_PRESET.map(preset => {
     const matchedBooking = findBookingCoveringSlot(dayRoomBookings, preset.time);
@@ -76,7 +80,7 @@ export default function TimeSlotGrid({
       isBooked,
       bookingId: matchedBooking?.id,
       isCurrentUser,
-      isPastDisabled: isSlotInPast(preset.time) && !isBooked,
+      isPastDisabled: (isSlotInPast(preset.time) || isSunday) && !isBooked,
     };
   });
 

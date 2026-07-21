@@ -99,6 +99,8 @@ export default function Calendar({ selectedDate, onSelectDate, bookings, current
         today.getFullYear() === currentYear;
 
       const isPast = isPastDay(dayNum);
+      const isSunday = new Date(currentYear, currentMonth, dayNum).getDay() === 0;
+      const isUnavailable = isPast || isSunday;
 
       // Check if this date has bookings of mine to display an indicator dot
       const dayBookings = bookings.filter(b => b.date === dateString && b.userEmail === currentUserEmail);
@@ -115,19 +117,19 @@ export default function Calendar({ selectedDate, onSelectDate, bookings, current
       days.push(
         <div key={`day-${dayNum}`} className="w-full h-full flex items-center justify-center">
           <button
-            disabled={isPast}
+            disabled={isUnavailable}
             onClick={() => handleDaySelect(dayNum)}
             className={`
               relative aspect-square w-full h-full max-w-9 max-h-9 min-w-6 min-h-6 rounded-full flex flex-col items-center justify-center text-xs sm:text-sm font-sans transition-all duration-200 focus:outline-none cursor-pointer
-              ${isPast ? 'text-slate-300 cursor-not-allowed opacity-40' : 'text-slate-700 font-medium'}
+              ${isUnavailable ? 'text-slate-300 cursor-not-allowed opacity-40' : 'text-slate-700 font-medium'}
               ${isToday && !isSelected ? 'border border-[#0f172b]/50 text-[#0f172b] font-semibold bg-[#0f172b]/5' : ''}
               ${isSelected ? 'bg-[#0f172b] text-white font-bold shadow-md shadow-[#0f172b]/20 scale-105' : 'hover:bg-slate-100'}
             `}
-            title={isToday ? 'Today' : undefined}
+            title={isToday ? 'Today' : isSunday ? 'Not available for booking on Sundays' : undefined}
             id={`calendar-day-${dateString}`}
           >
             <span className="font-display leading-none">{dayNum}</span>
-            {hasBookings && !isPast && (
+            {hasBookings && !isUnavailable && (
               <span
                 className={`absolute bottom-0.5 h-0.5 w-0.5 rounded-full ${isSelected ? 'bg-white' : dotColorClass}`}
               />
