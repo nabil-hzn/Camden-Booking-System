@@ -63,6 +63,7 @@ export default function App() {
       if (decoded) {
         setUser(decoded);
         setIdToken(storedToken);
+        loadBookings(storedToken);
       } else {
         sessionStorage.removeItem(ID_TOKEN_STORAGE_KEY);
       }
@@ -362,6 +363,7 @@ export default function App() {
                     showToast(`Viewing schedule for ${date}`, 'info');
                   }}
                   bookings={bookings}
+                  currentUserEmail={user.email}
                 />
               </div>
             </div>

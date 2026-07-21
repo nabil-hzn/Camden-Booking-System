@@ -6,9 +6,10 @@ interface CalendarProps {
   selectedDate: string;
   onSelectDate: (dateStr: string) => void;
   bookings: Booking[];
+  currentUserEmail: string;
 }
 
-export default function Calendar({ selectedDate, onSelectDate, bookings }: CalendarProps) {
+export default function Calendar({ selectedDate, onSelectDate, bookings, currentUserEmail }: CalendarProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -99,8 +100,8 @@ export default function Calendar({ selectedDate, onSelectDate, bookings }: Calen
 
       const isPast = isPastDay(dayNum);
 
-      // Check if this date has bookings to display a indicator dot
-      const dayBookings = bookings.filter(b => b.date === dateString);
+      // Check if this date has bookings of mine to display an indicator dot
+      const dayBookings = bookings.filter(b => b.date === dateString && b.userEmail === currentUserEmail);
       const hasBookings = dayBookings.length > 0;
 
       // Color coding for booking count
