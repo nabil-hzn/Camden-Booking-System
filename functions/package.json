@@ -7,8 +7,8 @@
     "node": "24"
   },
   "dependencies": {
-    "@google-cloud/firestore": "^7.11.0",
     "express": "^4.21.2",
-    "google-auth-library": "^9.15.0"
+    "google-auth-library": "^9.15.0",
+    "pg": "^8.13.1"
   }
 }

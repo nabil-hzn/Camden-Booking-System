@@ -1,18 +1,26 @@
 const express = require('express');
 const path = require('path');
-const { Firestore } = require('@google-cloud/firestore');
+const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 
-const DATABASE_ID = process.env.FIRESTORE_DATABASE_ID || 'cmscheduler';
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(';')
   .map((o) => o.trim())
   .filter(Boolean);
 
-const firestore = new Firestore({ databaseId: DATABASE_ID });
+const pool = new Pool({
+  host: process.env.SQL_HOST,
+  user: process.env.SQL_USER,
+  password: process.env.SQL_PASSWORD,
+  database: process.env.SQL_DB_NAME,
+  connectionTimeoutMillis: 15000,
+});
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle SQL pool client:', err);
+});
+
 const oauthClient = new OAuth2Client(CLIENT_ID);
-const bookingsCollection = firestore.collection('bookings');
 
 function applyCors(req, res) {
   const origin = req.headers.origin;
@@ -44,19 +52,28 @@ const toMinutes = (time) => {
 };
 
 // Strip contact/clinic details from bookings that don't belong to the requester,
-// so one user's Firestore read never leaks another clinic's contact info.
-function toClientView(doc, requesterEmail) {
-  const data = doc.data();
-  if (data.userEmail === requesterEmail) {
-    return { id: doc.id, ...data };
-  }
-  return {
-    id: doc.id,
-    roomId: data.roomId,
-    date: data.date,
-    slot: data.slot,
-    durationMinutes: data.durationMinutes,
+// so one user's read never leaks another clinic's contact info.
+function toClientView(row, requesterEmail) {
+  const base = {
+    id: row.id,
+    roomId: row.room_id,
+    date: row.date,
+    slot: row.slot,
+    durationMinutes: row.duration_minutes,
   };
+  if (row.user_email === requesterEmail) {
+    return {
+      ...base,
+      userEmail: row.user_email,
+      clinicName: row.clinic_name,
+      unitNumber: row.unit_number,
+      contactNo: row.contact_no,
+      description: row.description,
+      hasCatering: row.has_catering,
+      createdAt: row.created_at,
+    };
+  }
+  return base;
 }
 
 const app = express();
@@ -87,10 +104,8 @@ bookings.use(async (req, res, next) => {
 
 bookings.get('/', async (req, res) => {
   try {
-    // Requires the composite index in ../firestore.indexes.json (date + slot) —
-    // without it Firestore rejects this query with FAILED_PRECONDITION.
-    const snapshot = await bookingsCollection.orderBy('date').orderBy('slot').get();
-    const results = snapshot.docs.map((doc) => toClientView(doc, req.user.email));
+    const { rows } = await pool.query('SELECT * FROM cmscheduler_booking ORDER BY date, slot');
+    const results = rows.map((row) => toClientView(row, req.user.email));
     res.status(200).json({ bookings: results });
   } catch (err) {
     console.error(err);
@@ -109,17 +124,16 @@ bookings.post('/', async (req, res) => {
       }
     }
 
-    const existingSnapshot = await bookingsCollection
-      .where('roomId', '==', body.roomId)
-      .where('date', '==', body.date)
-      .get();
+    const { rows: existingRows } = await pool.query(
+      'SELECT slot, duration_minutes FROM cmscheduler_booking WHERE room_id = $1 AND date = $2',
+      [body.roomId, body.date]
+    );
 
     const newStart = toMinutes(body.slot);
     const newEnd = newStart + Number(body.durationMinutes);
-    const conflict = existingSnapshot.docs.some((doc) => {
-      const b = doc.data();
-      const start = toMinutes(b.slot);
-      const end = start + b.durationMinutes;
+    const conflict = existingRows.some((row) => {
+      const start = toMinutes(row.slot);
+      const end = start + row.duration_minutes;
       return newStart < end && start < newEnd;
     });
 
@@ -129,6 +143,7 @@ bookings.post('/', async (req, res) => {
     }
 
     const newBooking = {
+      id: crypto.randomUUID(),
       roomId: body.roomId,
       date: body.date,
       slot: body.slot,
@@ -142,8 +157,26 @@ bookings.post('/', async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    const docRef = await bookingsCollection.add(newBooking);
-    res.status(201).json({ id: docRef.id, ...newBooking });
+    await pool.query(
+      `INSERT INTO cmscheduler_booking (id, room_id, date, slot, duration_minutes, user_email, clinic_name, unit_number, contact_no, description, has_catering, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [
+        newBooking.id,
+        newBooking.roomId,
+        newBooking.date,
+        newBooking.slot,
+        newBooking.durationMinutes,
+        newBooking.userEmail,
+        newBooking.clinicName,
+        newBooking.unitNumber,
+        newBooking.contactNo,
+        newBooking.description,
+        newBooking.hasCatering,
+        newBooking.createdAt,
+      ]
+    );
+
+    res.status(201).json(newBooking);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
@@ -152,17 +185,16 @@ bookings.post('/', async (req, res) => {
 
 bookings.delete('/:id', async (req, res) => {
   try {
-    const docRef = bookingsCollection.doc(req.params.id);
-    const doc = await docRef.get();
-    if (!doc.exists) {
+    const { rows } = await pool.query('SELECT user_email FROM cmscheduler_booking WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) {
       res.status(404).json({ error: 'Booking not found.' });
       return;
     }
-    if (doc.data().userEmail !== req.user.email) {
+    if (rows[0].user_email !== req.user.email) {
       res.status(403).json({ error: 'You can only cancel your own bookings.' });
       return;
     }
-    await docRef.delete();
+    await pool.query('DELETE FROM cmscheduler_booking WHERE id = $1', [req.params.id]);
     res.status(200).json({ id: req.params.id });
   } catch (err) {
     console.error(err);
