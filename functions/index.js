@@ -87,6 +87,8 @@ bookings.use(async (req, res, next) => {
 
 bookings.get('/', async (req, res) => {
   try {
+    // Requires the composite index in ../firestore.indexes.json (date + slot) —
+    // without it Firestore rejects this query with FAILED_PRECONDITION.
     const snapshot = await bookingsCollection.orderBy('date').orderBy('slot').get();
     const results = snapshot.docs.map((doc) => toClientView(doc, req.user.email));
     res.status(200).json({ bookings: results });
