@@ -1,3 +1,5 @@
+const express = require('express');
+const path = require('path');
 const { Firestore } = require('@google-cloud/firestore');
 const { OAuth2Client } = require('google-auth-library');
 
@@ -57,104 +59,123 @@ function toClientView(doc, requesterEmail) {
   };
 }
 
-exports.api = async (req, res) => {
+const app = express();
+app.use(express.json());
+app.use((req, res, next) => {
   applyCors(req, res);
-
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
     return;
   }
+  next();
+});
 
+// Everything under /bookings requires a verified Google ID token.
+// Static assets and the SPA shell below are intentionally public — the
+// login screen itself has to load before anyone has a token.
+const bookings = express.Router();
+
+bookings.use(async (req, res, next) => {
   const user = await verifyToken(req);
   if (!user) {
     res.status(401).json({ error: 'Missing or invalid authentication token.' });
     return;
   }
+  req.user = user;
+  next();
+});
 
-  const path = req.path.replace(/\/+$/, '') || '/';
-  const segments = path.split('/').filter(Boolean);
-
+bookings.get('/', async (req, res) => {
   try {
-    if (segments[0] !== 'bookings') {
-      res.status(404).json({ error: 'Not found.' });
-      return;
-    }
-
-    if (req.method === 'GET' && segments.length === 1) {
-      const snapshot = await bookingsCollection.orderBy('date').orderBy('slot').get();
-      const bookings = snapshot.docs.map((doc) => toClientView(doc, user.email));
-      res.status(200).json({ bookings });
-      return;
-    }
-
-    if (req.method === 'POST' && segments.length === 1) {
-      const body = req.body || {};
-      const required = ['roomId', 'date', 'slot', 'durationMinutes', 'clinicName'];
-      for (const field of required) {
-        if (!body[field]) {
-          res.status(400).json({ error: `Missing required field: ${field}` });
-          return;
-        }
-      }
-
-      const existingSnapshot = await bookingsCollection
-        .where('roomId', '==', body.roomId)
-        .where('date', '==', body.date)
-        .get();
-
-      const newStart = toMinutes(body.slot);
-      const newEnd = newStart + Number(body.durationMinutes);
-      const conflict = existingSnapshot.docs.some((doc) => {
-        const b = doc.data();
-        const start = toMinutes(b.slot);
-        const end = start + b.durationMinutes;
-        return newStart < end && start < newEnd;
-      });
-
-      if (conflict) {
-        res.status(409).json({ error: 'This slot overlaps with an existing booking.' });
-        return;
-      }
-
-      const newBooking = {
-        roomId: body.roomId,
-        date: body.date,
-        slot: body.slot,
-        durationMinutes: Number(body.durationMinutes),
-        userEmail: user.email,
-        clinicName: String(body.clinicName),
-        unitNumber: body.unitNumber ? String(body.unitNumber) : null,
-        contactNo: body.contactNo ? String(body.contactNo) : null,
-        description: body.description ? String(body.description) : null,
-        hasCatering: typeof body.hasCatering === 'boolean' ? body.hasCatering : null,
-        createdAt: new Date().toISOString(),
-      };
-
-      const docRef = await bookingsCollection.add(newBooking);
-      res.status(201).json({ id: docRef.id, ...newBooking });
-      return;
-    }
-
-    if (req.method === 'DELETE' && segments.length === 2) {
-      const bookingId = segments[1];
-      const docRef = bookingsCollection.doc(bookingId);
-      const doc = await docRef.get();
-      if (!doc.exists) {
-        res.status(404).json({ error: 'Booking not found.' });
-        return;
-      }
-      if (doc.data().userEmail !== user.email) {
-        res.status(403).json({ error: 'You can only cancel your own bookings.' });
-        return;
-      }
-      await docRef.delete();
-      res.status(200).json({ id: bookingId });
-      return;
-    }
-
-    res.status(404).json({ error: 'Not found.' });
+    const snapshot = await bookingsCollection.orderBy('date').orderBy('slot').get();
+    const results = snapshot.docs.map((doc) => toClientView(doc, req.user.email));
+    res.status(200).json({ bookings: results });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal server error.' });
   }
-};
+});
+
+bookings.post('/', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const required = ['roomId', 'date', 'slot', 'durationMinutes', 'clinicName'];
+    for (const field of required) {
+      if (!body[field]) {
+        res.status(400).json({ error: `Missing required field: ${field}` });
+        return;
+      }
+    }
+
+    const existingSnapshot = await bookingsCollection
+      .where('roomId', '==', body.roomId)
+      .where('date', '==', body.date)
+      .get();
+
+    const newStart = toMinutes(body.slot);
+    const newEnd = newStart + Number(body.durationMinutes);
+    const conflict = existingSnapshot.docs.some((doc) => {
+      const b = doc.data();
+      const start = toMinutes(b.slot);
+      const end = start + b.durationMinutes;
+      return newStart < end && start < newEnd;
+    });
+
+    if (conflict) {
+      res.status(409).json({ error: 'This slot overlaps with an existing booking.' });
+      return;
+    }
+
+    const newBooking = {
+      roomId: body.roomId,
+      date: body.date,
+      slot: body.slot,
+      durationMinutes: Number(body.durationMinutes),
+      userEmail: req.user.email,
+      clinicName: String(body.clinicName),
+      unitNumber: body.unitNumber ? String(body.unitNumber) : null,
+      contactNo: body.contactNo ? String(body.contactNo) : null,
+      description: body.description ? String(body.description) : null,
+      hasCatering: typeof body.hasCatering === 'boolean' ? body.hasCatering : null,
+      createdAt: new Date().toISOString(),
+    };
+
+    const docRef = await bookingsCollection.add(newBooking);
+    res.status(201).json({ id: docRef.id, ...newBooking });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+bookings.delete('/:id', async (req, res) => {
+  try {
+    const docRef = bookingsCollection.doc(req.params.id);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      res.status(404).json({ error: 'Booking not found.' });
+      return;
+    }
+    if (doc.data().userEmail !== req.user.email) {
+      res.status(403).json({ error: 'You can only cancel your own bookings.' });
+      return;
+    }
+    await docRef.delete();
+    res.status(200).json({ id: req.params.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.use('/bookings', bookings);
+
+// Frontend build output, copied into place by scripts/copy-dist-to-functions.js
+// (`npm run build:function`) before deploy — see functions/public.
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
+
+exports.api = app;

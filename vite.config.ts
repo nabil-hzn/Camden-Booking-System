@@ -5,7 +5,7 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
-    base: '/Camden-Booking-System/',
+    base: '/cmscheduler-api/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
