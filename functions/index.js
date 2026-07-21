@@ -173,8 +173,19 @@ app.use('/bookings', bookings);
 // Frontend build output, copied into place by scripts/copy-dist-to-functions.js
 // (`npm run build:function`) before deploy — see functions/public.
 const publicDir = path.join(__dirname, 'public');
-app.use(express.static(publicDir));
+// Asset filenames are content-hashed by Vite, so they're safe to cache
+// forever; index.html is not, and must always be revalidated — otherwise
+// returning visitors get stuck on a bundle from before the last deploy.
+app.use(express.static(publicDir, {
+  index: false,
+  setHeaders: (res, filePath) => {
+    if (path.basename(filePath) !== 'index.html') {
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+  },
+}));
 app.get('*', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.sendFile(path.join(publicDir, 'index.html'));
 });
 

@@ -78,7 +78,7 @@ export default function App() {
     window.google?.accounts.id.disableAutoSelect();
   };
 
-  const loadBookings = async (token: string) => {
+  const loadBookings = async (token: string, opts: { silent?: boolean } = {}) => {
     try {
       const data = await fetchBookings(token);
       setBookings(data);
@@ -86,11 +86,33 @@ export default function App() {
       if (err instanceof AuthError) {
         handleSignOut();
         showToast('Session expired. Please sign in again.', 'error');
-      } else {
+      } else if (!opts.silent) {
         showToast('Failed to load bookings. Please refresh.', 'error');
       }
     }
   };
+
+  // Keep the time-slot grid in sync with bookings made by other users:
+  // poll periodically, and refetch immediately whenever the tab regains focus.
+  useEffect(() => {
+    if (!idToken) return;
+
+    const interval = setInterval(() => {
+      loadBookings(idToken, { silent: true });
+    }, 20000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadBookings(idToken, { silent: true });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [idToken]);
 
   const handleCredential = (token: string) => {
     const decoded = decodeGoogleIdToken(token);
