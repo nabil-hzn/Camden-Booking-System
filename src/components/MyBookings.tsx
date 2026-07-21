@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Booking, BookingFormDetails, Room } from '../types';
 import LucideIcon from './LucideIcon';
-import { addMinutesToTime } from '../utils/bookingTime';
+import { addMinutesToTime, getTodayDateString } from '../utils/bookingTime';
 
 const TERMS_DOCUMENT_URL = 'https://drive.google.com/file/d/1xlL8pmJ6lG25zGfhaMIIPoBuBV1DR44X/view';
 
@@ -67,9 +67,10 @@ export default function MyBookings({
     ? addMinutesToTime(selectedSlotTimes[selectedSlotTimes.length - 1], 60)
     : undefined;
 
-  // Filter bookings belonging to current user and sort chronologically
+  // Filter bookings belonging to current user, from today onward, sorted chronologically
+  const todayStr = getTodayDateString();
   const myBookings = bookings
-    .filter(b => b.userEmail === currentUserEmail)
+    .filter(b => b.userEmail === currentUserEmail && b.date >= todayStr)
     .sort((a, b) => {
       const dateCompare = a.date.localeCompare(b.date);
       if (dateCompare !== 0) return dateCompare;

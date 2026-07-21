@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ROOMS } from './data/rooms';
 import { Booking, BookingFormDetails } from './types';
-import { findBookingCoveringSlot } from './utils/bookingTime';
+import { findBookingCoveringSlot, getTodayDateString } from './utils/bookingTime';
 import { decodeGoogleIdToken, GoogleUser } from './utils/auth';
 import { fetchBookings, createBooking, cancelBooking, AuthError } from './utils/api';
 
@@ -27,16 +27,8 @@ export default function App() {
   // Bookings state, loaded from the API once signed in
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  const getTodayString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   // Selected date and room
-  const [selectedDate, setSelectedDate] = useState(() => getTodayString());
+  const [selectedDate, setSelectedDate] = useState(() => getTodayDateString());
   const [selectedRoomId, setSelectedRoomId] = useState('nap-1');
 
   // Slot selection state for booking modal (contiguous hours, ordered ascending)
