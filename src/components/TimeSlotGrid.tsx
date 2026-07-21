@@ -15,7 +15,6 @@ interface TimeSlotGridProps {
 }
 
 export const TIME_SLOTS_PRESET = [
-  { time: '08:00', label: '08:00 AM' },
   { time: '09:00', label: '09:00 AM' },
   { time: '10:00', label: '10:00 AM' },
   { time: '11:00', label: '11:00 AM' },
@@ -238,7 +237,7 @@ export default function TimeSlotGrid({
                   {(slot.isCurrentUser || isSelected) ? (
                     <div className="flex-1 min-w-0">
                       <p className={`text-[9px] font-sans truncate font-semibold leading-none ${isSelected ? 'text-slate-200' : 'text-slate-800'}`}>
-                        {slot.isCurrentUser ? 'Your session' : isLastSelected ? 'Selecting...' : 'Selected'}
+                        {slot.isCurrentUser ? 'Your session' : 'Selecting...'}
                       </p>
                       {slot.isCurrentUser && (
                         <button
