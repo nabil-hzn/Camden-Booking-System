@@ -46,11 +46,6 @@ export default function Login({ onCredential }: LoginProps) {
           Sign in with your Google account to book facilities.
         </p>
         <div ref={buttonRef} id="google-signin-button" />
-        {GOOGLE_CLIENT_ID === 'PENDING_SETUP' && (
-          <p className="text-[10px] text-rose-600 mt-4 max-w-[240px]">
-            Google Sign-In is not configured yet (missing OAuth Client ID).
-          </p>
-        )}
       </div>
     </div>
   );
